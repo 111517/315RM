@@ -1,0 +1,26 @@
+<annotation>
+	<folder>train</folder>
+	<filename>0045.png</filename>
+	<path>D:\yolov5-master\mydate\images\train\0045.png</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>1920</width>
+		<height>1080</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>3</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>987</xmin>
+			<ymin>669</ymin>
+			<xmax>1135</xmax>
+			<ymax>892</ymax>
+		</bndbox>
+	</object>
+</annotation>

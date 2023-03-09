@@ -1,0 +1,26 @@
+<annotation>
+	<folder>train</folder>
+	<filename>0319.jpg</filename>
+	<path>D:\yolov5-master\mydate\images\train\0319.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>1280</width>
+		<height>1024</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>3</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>574</xmin>
+			<ymin>450</ymin>
+			<xmax>595</xmax>
+			<ymax>514</ymax>
+		</bndbox>
+	</object>
+</annotation>
