@@ -5,6 +5,14 @@ Run inference on images, videos, directories, streams, etc.
 Usage:
     $ python path/to/detect.py --source path/to/img.jpg --weights yolov5s.pt --img 640
 """
+import os
+import sys
+from pathlib import Path
+FILE = Path(__file__).resolve()
+ROOT = FILE.parents[0]  # YOLOv5 root directory
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))  # add ROOT to PATH
+ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 import argparse
 import os
@@ -222,18 +230,48 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                        mtx =  [[320.98476465,0,351.02485862],
+                                [0,321.81408429,247.80478742],
+                                [0,0,1]]
+                        mtx = np.array(mtx)
+                        dist = [[-2.68653784e-02 , 5.68023859e-02 ,-6.36002456e-05 , 1.06945990e-03,-3.27264431e-02]]
+                        dist = np.array(dist)
+                        Camera_intrinsic = {"mtx": mtx, "dist": dist, }
+                        rvec_matrix = np.array([[ 0.59145205, -0.00465524 , 0.80632674],
+ [-0.05093781 ,-0.99820175 , 0.03160059],
+ [ 0.80472966, -0.05976275, -0.5906256 ]])
+                        tvec = np.array([[ 3.93251801],
+ [-1.25883372],
+ [21.29581439]])
+
+                        rt = np.array([[rvec_matrix[0][0], rvec_matrix[0][1], tvec[0]],
+                                       [rvec_matrix[1][0], rvec_matrix[1][1], tvec[1]],
+                                       [rvec_matrix[2][0], rvec_matrix[2][1], tvec[2]]], dtype=np.float)
+                        rt_i = np.linalg.inv(rt)
+                        pi_i = np.linalg.inv(Camera_intrinsic["mtx"])
+                        x1, y1, x2, y2 = xyxy
+                        xx = (x1 + x2) / 2
+                        yy = max(y1, y2);
+                        uv = np.array([[xx.cpu()],
+                                       [yy.cpu()],
+                                       [1]])
+                        xy1 = rt_i.dot(pi_i.dot(uv))
+                        xy1[0] = xy1[0] * 0.43
+                        xy1[1] = xy1[1] * 0.43
+                        xxx = "%.3f" % xy1[0]
+                        yyy = "%.2f" % xy1[1]
+                        label = xxx + " " + yyy
                         annotator.box_label(xyxy, label, color=colors(c, True))
-                        if save_crop:
-                              save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
                         x1 = int(xyxy[0].item())
                         y1 = int(xyxy[1].item())
                         x2 = int(xyxy[2].item())
                         y2 = int(xyxy[3].item())
                         class_index = cls  # 获取属性
                         object_name = names[int(cls)]
-                        print('bounding box is', x1, y1, x2, y2)  # 打印坐标
+                        print('bounding box is', xxx,yyy)# 打印坐标
+                        print('bounding box is', x1, y1,x2,y2)
                     # print('class index is',class_index.item())#打印属性，由于我们只有一个类，所以是0
-                    # print('object_names is',object_name)#打印标签名字，
+                        #print('object_names is',object_name)#打印标签名字，
 
             # Print time (inference-only)
             print(f'{s}Done. ({t3 - t2:.3f}s)')
@@ -242,40 +280,41 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
             im0 = annotator.result()
             if view_img:
                 cv2.imshow(str(p), im0)
-                cv2.waitKey(1)  # 1 millisecond
+            cv2.waitKey(1)  # 1 millisecond
 
             # Save results (image with detections)
             if save_img:
                 if dataset.mode == 'image':
-                    cv2.imwrite(save_path, im0)
-                else:  # 'video' or 'stream'
-                    if vid_path[i] != save_path:  # new video
-                        vid_path[i] = save_path
-                        if isinstance(vid_writer[i], cv2.VideoWriter):
-                            vid_writer[i].release()  # release previous video writer
-                        if vid_cap:  # video
-                            fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        else:  # stream
-                            fps, w, h = 30, im0.shape[1], im0.shape[0]
-                            save_path += '.mp4'
-                        vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                    vid_writer[i].write(im0)
+                   cv2.imwrite(save_path, im0)
+            else:  # 'video' or 'stream'
+             if vid_path[i] != save_path:  # new video
+                vid_path[i] = save_path
+             if isinstance(vid_writer[i], cv2.VideoWriter):
+                vid_writer[i].release()  # release previous video writer
+             if vid_cap:  # video
+                fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+             else:  # stream
+                     fps, w, h = 30, im0.shape[1], im0.shape[0]
+                     save_path += '.mp4'
+                     vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                     vid_writer[i].write(im0)
 
-    # Print results
-    t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
-    print(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
-    if save_txt or save_img:
-        s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
-        print(f"Results saved to {colorstr('bold', save_dir)}{s}")
-    if update:
-        strip_optimizer(weights)  # update model (to fix SourceChangeWarning)
+            # Print results
+             t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
+             print(
+                f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
+            if save_txt or save_img:
+                s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
+            print(f"Results saved to {colorstr('bold', save_dir)}{s}")
+            if update:
+                strip_optimizer(weights)  # update model (to fix SourceChangeWarning)
 
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'myweight/weights/best.pt', help='model path(s)')
+    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'myweight\weights/best.pt', help='model path(s)')
     parser.add_argument('--source', type=str, default=ROOT / '1', help='file/dir/URL/glob, 0 for webcam')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')

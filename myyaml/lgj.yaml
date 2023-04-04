@@ -1,7 +1,6 @@
-train: mydate/images/train  # train images (relative to 'path') 128 images
-val: mydate/images/train  # val images (relative to 'path') 128 images
-
+train: mydata_two/train  # train images (relative to 'path') 128 images
+val: mydata_two/train  # val images (relative to 'path') 128 images
 # Classes
-nc: 3   # number of classes
-names: ['4','3','5',]
+nc: 8 # number of classes
+names: ['armor_red','armor_blue','armor_unknow','car_red','car_bule','car_unknow','watch_red','watch_blue']
 # class names
